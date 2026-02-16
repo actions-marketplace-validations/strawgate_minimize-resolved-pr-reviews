@@ -1,5 +1,5 @@
 import { GraphQLClient } from "./types";
-import { fetchReviewThreads, minimizeReview } from "./github";
+import { fetchPullRequestData, minimizeReview } from "./github";
 
 function mockClient(
   response: unknown,
@@ -14,17 +14,18 @@ function mockClient(
   };
 }
 
-describe("fetchReviewThreads", () => {
+describe("fetchPullRequestData", () => {
   it("passes owner, repo, and prNumber to the query", async () => {
     const client = mockClient({
       repository: {
         pullRequest: {
           reviewThreads: { nodes: [] },
+          reviews: { nodes: [] },
         },
       },
     });
 
-    await fetchReviewThreads(client, "my-org", "my-repo", 42);
+    await fetchPullRequestData(client, "my-org", "my-repo", 42);
 
     expect(client.calls).toHaveLength(1);
     expect(client.calls[0].variables).toEqual({
@@ -34,12 +35,16 @@ describe("fetchReviewThreads", () => {
     });
   });
 
-  it("returns the review thread nodes from the response", async () => {
+  it("returns both threads and reviews from the response", async () => {
     const threads = [
+      { id: "t1", isResolved: true, comments: { nodes: [] } },
+    ];
+    const reviews = [
       {
-        id: "t1",
-        isResolved: true,
-        comments: { nodes: [] },
+        id: "r1",
+        author: { login: "alice" },
+        createdAt: "2025-01-01T00:00:00Z",
+        isMinimized: false,
       },
     ];
 
@@ -47,12 +52,14 @@ describe("fetchReviewThreads", () => {
       repository: {
         pullRequest: {
           reviewThreads: { nodes: threads },
+          reviews: { nodes: reviews },
         },
       },
     });
 
-    const result = await fetchReviewThreads(client, "o", "r", 1);
-    expect(result).toEqual(threads);
+    const result = await fetchPullRequestData(client, "o", "r", 1);
+    expect(result.threads).toEqual(threads);
+    expect(result.reviews).toEqual(reviews);
   });
 });
 

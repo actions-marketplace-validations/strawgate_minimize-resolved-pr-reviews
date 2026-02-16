@@ -1,16 +1,23 @@
-import { GraphQLClient, ReviewThread } from "./types";
+import {
+  GraphQLClient,
+  ReviewThread,
+  PullRequestReviewNode,
+} from "./types";
 
-interface ReviewThreadsResponse {
+interface PullRequestDataResponse {
   repository: {
     pullRequest: {
       reviewThreads: {
         nodes: ReviewThread[];
       };
+      reviews: {
+        nodes: PullRequestReviewNode[];
+      };
     };
   };
 }
 
-const REVIEW_THREADS_QUERY = `
+const PULL_REQUEST_DATA_QUERY = `
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
@@ -32,6 +39,16 @@ const REVIEW_THREADS_QUERY = `
             }
           }
         }
+        reviews(first: 100) {
+          nodes {
+            id
+            author {
+              login
+            }
+            createdAt
+            isMinimized
+          }
+        }
       }
     }
   }
@@ -47,18 +64,22 @@ const MINIMIZE_MUTATION = `
   }
 `;
 
-/** Fetches all review threads for a PR. */
-export async function fetchReviewThreads(
+/** Fetches all review threads and reviews for a PR in a single query. */
+export async function fetchPullRequestData(
   client: GraphQLClient,
   owner: string,
   repo: string,
   prNumber: number,
-): Promise<ReviewThread[]> {
-  const response = await client.graphql<ReviewThreadsResponse>(
-    REVIEW_THREADS_QUERY,
+): Promise<{ threads: ReviewThread[]; reviews: PullRequestReviewNode[] }> {
+  const response = await client.graphql<PullRequestDataResponse>(
+    PULL_REQUEST_DATA_QUERY,
     { owner, repo, number: prNumber },
   );
-  return response.repository.pullRequest.reviewThreads.nodes;
+  const pr = response.repository.pullRequest;
+  return {
+    threads: pr.reviewThreads.nodes,
+    reviews: pr.reviews.nodes,
+  };
 }
 
 /** Minimizes a review or comment by its node ID. */
