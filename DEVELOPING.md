@@ -16,8 +16,8 @@ make install
 ```
 src/
   types.ts        # Shared interfaces (API types, business logic types, GraphQLClient)
-  reviews.ts      # Pure business logic (groupThreadsByReview, findCommentsToMinimize)
-  github.ts       # Thin GraphQL API wrappers (fetchReviewThreads, minimizeComment)
+  reviews.ts      # Pure business logic (groupThreadsByReview, findReviewsToMinimize)
+  github.ts       # Thin GraphQL API wrappers (fetchReviewThreads, minimizeReview)
   index.ts        # Entry point -- reads action inputs, orchestrates the above
   reviews.test.ts # Tests for reviews.ts
   github.test.ts  # Tests for github.ts
@@ -40,7 +40,7 @@ make test         # Run tests
 make lint         # Run ESLint
 make format       # Run Prettier
 make docker-build # Build the Docker image locally
-make pre-commit   # Run lint + test (use before committing)
+make pre-commit   # Run format + lint + test (use before committing)
 make clean        # Remove build artifacts
 ```
 
